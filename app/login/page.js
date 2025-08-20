@@ -1,6 +1,7 @@
 'use client'
 
 import { useForm } from 'react-hook-form'
+import { signIn } from "next-auth/react";
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { Input } from '@/components/ui/input'
@@ -19,6 +20,26 @@ export default function LoginPage() {
     formState: { errors },
   } = useForm()
 
+  const onSubmit = (data) => {
+    setError("");
+    startTransition(async () => {
+      const result = await signIn("credentials", {
+        email: data.email.trim(),
+        password: data.password.trim(),
+        redirect: false, // We will handle redirect manually
+      });
+
+      if (result.error) {
+        setError("Invalid email or password. Please try again.");
+      } else {
+        // On successful sign-in, NextAuth will set the session cookie.
+        // Then we can redirect.
+        router.push('/dashboard');
+        router.refresh(); // Refresh the page to reflect the new session
+      }
+    });
+  };
+
   return (
     <section className="h-screen w-full flex items-center justify-center">
       <div className="p-5">
@@ -29,6 +50,7 @@ export default function LoginPage() {
           </h2>
         </div>
         <form
+          onSubmit={handleSubmit(onSubmit)}
           className="rounded-md w-[25rem] flex flex-col gap-6"
         >
           <div>

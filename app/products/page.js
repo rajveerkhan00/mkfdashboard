@@ -15,7 +15,7 @@ export default function ProductPage() {
         </div>
         <div>
         <Button asChild>
-          <Link href="/categories/new">
+          <Link href="/products/new">
             <PlusCircle className="mr-2 h-4 w-4" />
             Add Product
           </Link>
@@ -24,7 +24,7 @@ export default function ProductPage() {
 
       </div>
       <div className="grid gap-4">
-        <CustomList fetchUrl={fetchUrl}/>
+        <CustomList fetchUrl={fetchUrl} isCategory={false}/>
       </div>
     </DashboardShell>
   )

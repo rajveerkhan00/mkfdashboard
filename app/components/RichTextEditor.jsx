@@ -191,7 +191,7 @@ export default function RichTextEditor({ value, onChange }) {
 >
   <EditorContent
     editor={editor}
-    className="prose prose-sm md:prose-base"
+    className="prose prose-sm md:prose-base max-w-none max-h-none"
   />
   {/* Fallback filler when editor is empty to make space focusable */}
   {editor && editor.isEmpty && (

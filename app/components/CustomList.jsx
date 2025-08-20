@@ -6,8 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
-import { DeleteCategoryButton } from "."
-export default async function Customlist({fetchUrl}) {
+import { DeleteCategoryButton, DeleteProductButton } from "."
+export default async function Customlist({fetchUrl, isCategory=true}) {
   const res = await fetch(fetchUrl, {
   cache: "no-store",
   next: { revalidate: 0 },
@@ -61,12 +61,16 @@ export default async function Customlist({fetchUrl}) {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem asChild>
-                        <Link href={`/categories/edit/${category._id}`}>
+                        <Link href={`${isCategory ? 'categories' : 'products'}/edit/${category._id}`}>
                           <Pencil className="mr-2 h-4 w-4" />
                           Edit
                         </Link>
                       </DropdownMenuItem>
-                      <DeleteCategoryButton id={category._id}/>
+                      {isCategory ? (
+                        <DeleteCategoryButton id={category._id}/>
+                      ) : (
+                        <DeleteProductButton id={category._id}/>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

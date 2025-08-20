@@ -1,22 +1,21 @@
 import { EntityForm, DashboardShell } from "@/app/components"
-import { param } from "drizzle-orm"
 
 export default async function UpdateCategoryPage({params}) {
 
   const {id} = params
-  const res = await fetch(`https://custompackboxes.vercel.app/api/category/${id}`, {
+  const res = await fetch(`https://custompackboxes.vercel.app/api/products/${id}`, {
     cache: "no-store",
   })
 
   if (!res.ok) {
-    throw new Error("Failed to fetch category")
+    throw new Error("Failed to fetch product")
   }
 
-  const category = await res.json()
+  const product = await res.json()
   return (
     <DashboardShell>
       <div className="grid gap-4">
-        <EntityForm entityType="category" initialData={category}/>
+        <EntityForm entityType="products" initialData={product}/>
       </div>
     </DashboardShell>
   )
