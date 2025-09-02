@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import User from "@/models/User";
 import { connectDB as dbConnect } from "./lib/db";
+export const runtime = "nodejs";
 export const {
   handlers: { GET, POST },
   auth,
