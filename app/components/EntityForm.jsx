@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -16,7 +17,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { RichTextEditor, CloudinaryUpload } from ".";
+import { RichTextEditor } from ".";
+import ImageUpload from "./ImageUpload"; // Using the new ImageUpload component
+import { handleDelete, handleUpload } from ".";
 import {
   Select,
   SelectContent,
@@ -25,14 +28,32 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export default function EntityForm({ entityType = "category", rePush = "categories", initialData = {} }) {
+export default function EntityForm({
+  entityType = "category",
+  rePush = "categories",
+  initialData = {},
+}) {
   const router = useRouter();
-  const [image, setImage] = useState(initialData?.homeImage || initialData?.image || "");
-  const [heroImage, setHeroImage] = useState(initialData?.heroImage || "");
-  const [longDescription, setLongDescription] = useState(initialData?.longDescription || "");
+
+  // State for image objects (url and public_id)
+  const [image, setImage] = useState(
+    entityType === "category" ? initialData?.homeImage || null : initialData?.image || null
+  );
+
+  const [heroImage, setHeroImage] = useState(initialData?.heroImage || null);
+
+  // State for new image files
+  const [imageFile, setImageFile] = useState(null);
+  const [heroImageFile, setHeroImageFile] = useState(null);
+
+  const [longDescription, setLongDescription] = useState(
+    initialData?.longDescription || ""
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [categories, setCategories] = useState([]);
-  const [categorySlug, setCategorySlug] = useState(initialData?.categorySlug || "");
+  const [categorySlug, setCategorySlug] = useState(
+    initialData?.categorySlug || ""
+  );
 
   const {
     register,
@@ -50,7 +71,6 @@ export default function EntityForm({ entityType = "category", rePush = "categori
     },
   });
 
-  // Fetch categories for product form dropdown
   useEffect(() => {
     if (entityType === "products") {
       const fetchCategories = async () => {
@@ -72,18 +92,46 @@ export default function EntityForm({ entityType = "category", rePush = "categori
     }
   }, [entityType]);
 
-  console.log(categories)
-
   const onSubmit = async (data) => {
     setIsLoading(true);
-    const formData = {
-      ...data,
-      longDescription,
-      ...(entityType === "category" ? { homeImage: image, heroImage } : { image }),
-      ...(entityType === "products" && { categorySlug }),
-    };
-
     try {
+      let newImageData = image;
+      let newHeroImageData = heroImage;
+
+      if (imageFile) {
+        // If there was an old image, delete it
+        if (initialData?.image?.public_id) {
+          await handleDelete(initialData.image.public_id);
+        }
+        newImageData = await handleUpload(imageFile); // ✅ changed
+      } else if (image === null && initialData?.image?.public_id) {
+        // Handle case where image was removed without replacement
+        await handleDelete(initialData.image.public_id); // ✅ changed
+        newImageData = null;
+      }
+
+      // Handle hero image upload for categories
+      if (heroImageFile) {
+        if (initialData?.heroImage?.public_id) {
+          await handleDelete(initialData.heroImage.public_id);
+        }
+        newHeroImageData = await handleUpload(heroImageFile); // ✅ changed
+      } else if (heroImage === null && initialData?.heroImage?.public_id) {
+        await handleDelete(initialData.heroImage.public_id); // ✅ changed
+        newHeroImageData = null;
+      }
+
+
+      const formData = {
+        ...data,
+        longDescription,
+        ...(entityType === "category"
+          ? { homeImage: newImageData, heroImage: newHeroImageData } // ✅ FIX
+          : { image: newImageData }), // ✅ Products stay same
+        ...(entityType === "products" && { categorySlug }),
+      };
+
+
       const res = await fetch(
         initialData?._id
           ? `https://custompackboxes.vercel.app/api/${entityType}/${initialData._id}`
@@ -104,14 +152,14 @@ export default function EntityForm({ entityType = "category", rePush = "categori
       }
 
       toast.success(
-        initialData?._id
-          ? `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} Updated Successfully`
-          : `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} created successfully`
+        `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} ${initialData?._id ? "Updated" : "Created"
+        } Successfully`
       );
 
       router.push(`/${rePush}`);
+      router.refresh(); // To reflect changes immediately
     } catch (err) {
-      console.log(err);
+      console.error(err);
       toast.error(err.message || "Something went wrong.");
     } finally {
       setIsLoading(false);
@@ -122,15 +170,15 @@ export default function EntityForm({ entityType = "category", rePush = "categori
     <Card>
       <CardHeader>
         <CardTitle>
-          {initialData?._id ? `Edit ${entityType.charAt(0).toUpperCase() + entityType.slice(1)}` : `New ${entityType.charAt(0).toUpperCase() + entityType.slice(1)}`}
+          {initialData?._id ? `Edit` : `New`} {entityType}
         </CardTitle>
         <CardDescription>
-          {initialData?._id
-            ? `Update your ${entityType} details.`
-            : `Fill in the details to create a new ${entityType}.`}
+          Fill in the details to {initialData?._id ? "update your" : "create a new"}{" "}
+          {entityType}.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Form fields remain the same */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="name">{entityType.charAt(0).toUpperCase() + entityType.slice(1)} Name</Label>
@@ -225,46 +273,38 @@ export default function EntityForm({ entityType = "category", rePush = "categori
             )}
           </div>
         )}
-
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="image">{entityType === "category" ? "Main Image" : "Product Image"}</Label>
-            {image ? (
-              <div className="flex items-center gap-2">
-                <img src={image} width={120} height={120} alt="Preview" />
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setImage("")}
-                >
-                  Remove
-                </Button>
-              </div>
-            ) : null}
-            <CloudinaryUpload onUploadComplete={(url) => setImage(url)} />
+            <Label>
+              {entityType === "category" ? "Main Image" : "Product Image"}
+            </Label>
+            <ImageUpload
+              initialImageUrl={
+                entityType === "category"
+                  ? initialData?.homeImage?.url || image?.url || image
+                  : initialData?.image?.url || image?.url || image
+              }
+              onFileChange={(file) => {
+                setImageFile(file);
+                if (!file) setImage(null);
+              }}
+            />
+
             <p className="text-xs text-muted-foreground">
-              Recommended size: {entityType === "category" ? "800x600px" : "1200x1200px"}
+              Recommended size: 800x600px
             </p>
           </div>
 
           {entityType === "category" && (
             <div className="space-y-2">
-              <Label htmlFor="heroImage">Hero Image</Label>
-              {heroImage ? (
-                <div className="flex items-center gap-2">
-                  <img src={heroImage} width={120} height={120} alt="Preview" />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => setHeroImage("")}
-                  >
-                    Remove
-                  </Button>
-                </div>
-              ) : null}
-              <CloudinaryUpload onUploadComplete={(url) => setHeroImage(url)} />
+              <Label>Hero Image</Label>
+              <ImageUpload
+                initialImageUrl={heroImage?.url || heroImage}
+                onFileChange={(file) => {
+                  setHeroImageFile(file);
+                  if (!file) setHeroImage(null);
+                }}
+              />
               <p className="text-xs text-muted-foreground">
                 Recommended size: 1920x1080px
               </p>
@@ -275,23 +315,18 @@ export default function EntityForm({ entityType = "category", rePush = "categori
       <CardFooter className="flex justify-between">
         <Button
           type="button"
-          className={"cursor-pointer"}
           variant="outline"
           onClick={() => router.push(`/${rePush}`)}
+          disabled={isLoading}
         >
           Cancel
         </Button>
         <Button
-          className={"cursor-pointer"}
           type="button"
-          disabled={isLoading}
           onClick={handleSubmit(onSubmit)}
+          disabled={isLoading}
         >
-          {isLoading
-            ? "Saving..."
-            : initialData?._id
-            ? `Update ${entityType.charAt(0).toUpperCase() + entityType.slice(1)}`
-            : `Create ${entityType.charAt(0).toUpperCase() + entityType.slice(1)}`}
+          {isLoading ? "Saving..." : `Save ${entityType}`}
         </Button>
       </CardFooter>
     </Card>

@@ -4,10 +4,8 @@ dotenv.config({ path: ".env.local" });
 import bcrypt from "bcryptjs";
 import { connectDB as dbConnect } from "../lib/db.js";
 import User from "../models/User.js";
-
 const email = process.env.SUPER_ADMIN_EMAIL;
 const password = process.env.SUPER_ADMIN_PASSWORD;
-
 async function main() {
   if (!email || !password) {
     throw new Error("❌ Please set SUPER_ADMIN_EMAIL and SUPER_ADMIN_PASSWORD in your .env file");

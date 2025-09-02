@@ -7,14 +7,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { DeleteCategoryButton, DeleteProductButton } from "."
-export default async function Customlist({fetchUrl, isCategory=true}) {
+export default async function Customlist({ fetchUrl, isCategory = true }) {
   const res = await fetch(fetchUrl, {
-  cache: "no-store",
-  next: { revalidate: 0 },
-  headers: {
-    "Content-Type": "application/json",
-  },
-})
+    cache: "no-store",
+    next: { revalidate: 0 },
+    headers: {
+      "Content-Type": "application/json",
+    },
+  })
 
   const categories = await res.json()
 
@@ -41,7 +41,12 @@ export default async function Customlist({fetchUrl, isCategory=true}) {
               <TableRow key={category._id}>
                 <TableCell>
                   <Image
-                    src={category.homeImage || category.image}
+                    src={
+                      category.homeImage?.url || // category main image
+                      category.image?.url ||     // product image
+                      category.homeImage ||      // fallback if it's already a string
+                      category.image             // fallback if it's already a string
+                    }
                     alt={category.name}
                     width={40}
                     height={40}
@@ -67,9 +72,9 @@ export default async function Customlist({fetchUrl, isCategory=true}) {
                         </Link>
                       </DropdownMenuItem>
                       {isCategory ? (
-                        <DeleteCategoryButton id={category._id}/>
+                        <DeleteCategoryButton id={category._id} publicId={category.homeImage || category.image} />
                       ) : (
-                        <DeleteProductButton id={category._id}/>
+                        <DeleteProductButton id={category._id} publicId={category.image?.public_id} />
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>

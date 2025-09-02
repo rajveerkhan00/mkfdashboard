@@ -6,6 +6,10 @@ export { default as DashboardShell } from "./DashboardShell"
 export { default as CustomList } from './CustomList'
 export { default as EntityForm } from "./EntityForm"
 export { default as RichTextEditor } from "./RichTextEditor"
-export { default as CloudinaryUpload } from "./CloudinaryUpload"
+export { default as ImageUpload } from "./ImageUpload"
 import { DeleteCategoryButton, DeleteProductButton } from "./DeleteCategoryButton"
 export {DeleteCategoryButton, DeleteProductButton}
+
+
+import { handleDelete, handleUpload } from "./HandleUpload"
+export { handleDelete, handleUpload}

@@ -1,7 +1,6 @@
 "use client"
 
 import { Input } from "@/components/ui/input"
-
 import { useState, useEffect } from "react"
 import { EditorContent, useEditor } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
@@ -30,6 +29,9 @@ export default function RichTextEditor({ value, onChange }) {
       Underline,
       Link.configure({
         openOnClick: false,
+        HTMLAttributes: {
+          class: 'text-red-600 hover:text-red-800 underline cursor-pointer',
+        },
       }),
     ],
     content: value,
@@ -38,31 +40,35 @@ export default function RichTextEditor({ value, onChange }) {
       onChange(editor.getHTML())
     },
     editorProps: {
-    handleKeyDown(view, event) {
-      // Custom behavior for Enter key
-      if (event.key === "Enter") {
-        const { state, dispatch } = view;
-        const tr = state.tr;
+      handleKeyDown(view, event) {
+        // Custom behavior for Enter key
+        if (event.key === "Enter") {
+          const { state, dispatch } = view;
+          const tr = state.tr;
 
-        // Remove all active marks
-        state.storedMarks?.forEach((mark) => {
-          tr.removeStoredMark(mark.type);
-        });
+          // Remove all active marks
+          state.storedMarks?.forEach((mark) => {
+            tr.removeStoredMark(mark.type);
+          });
 
-        dispatch(tr);
-      }
-
-      return false;
+          dispatch(tr);
+        }
+        return false;
+      },
     },
-  },
   })
 
   const [linkUrl, setLinkUrl] = useState("")
   const [showLinkInput, setShowLinkInput] = useState(false)
+  const [isLinkActive, setIsLinkActive] = useState(false)
+  const [linkError, setLinkError] = useState("")
 
   useEffect(() => {
-    if (editor && value !== editor.getHTML()) {
-      editor.commands.setContent(value)
+    if (editor) {
+      setIsLinkActive(editor.isActive('link'))
+      if (value !== editor.getHTML()) {
+        editor.commands.setContent(value)
+      }
     }
   }, [editor, value])
 
@@ -70,18 +76,64 @@ export default function RichTextEditor({ value, onChange }) {
     return null
   }
 
-  const addLink = () => {
-    if (linkUrl) {
-      editor.chain().focus().extendMarkRange("link").setLink({ href: linkUrl }).run()
-      setLinkUrl("")
-      setShowLinkInput(false)
+  const validateUrl = (url) => {
+    try {
+      new URL(url)
+      return true
+    } catch (_) {
+      return url.startsWith('#') || url.startsWith('/') || url.startsWith('mailto:') || url.startsWith('tel:')
     }
   }
 
+  const addLink = () => {
+    if (!linkUrl.trim()) {
+      setLinkError('Please enter a URL')
+      return
+    }
 
+    // Add https:// if no protocol is present and it's not an anchor/link
+    let processedUrl = linkUrl.trim()
+    if (!/^https?:\/\//i.test(processedUrl) && 
+        !processedUrl.startsWith('#') && 
+        !processedUrl.startsWith('/') &&
+        !processedUrl.startsWith('mailto:') &&
+        !processedUrl.startsWith('tel:')) {
+      processedUrl = 'https://' + processedUrl
+    }
+
+    if (!validateUrl(processedUrl)) {
+      setLinkError('Please enter a valid URL')
+      return
+    }
+
+    editor.chain().focus().extendMarkRange('link')
+      .setLink({ href: processedUrl })
+      .run()
+    
+    setLinkUrl('')
+    setShowLinkInput(false)
+    setLinkError('')
+  }
+
+  const handleLinkButtonClick = () => {
+    if (editor.isActive('link')) {
+      editor.chain().focus().unsetLink().run()
+      setShowLinkInput(false)
+    } else {
+      setShowLinkInput(true)
+      // Get selected text to pre-fill if any
+      const { from, to } = editor.state.selection
+      if (from !== to) {
+        const text = editor.state.doc.textBetween(from, to, ' ')
+        if (text) {
+          setLinkUrl(text)
+        }
+      }
+    }
+  }
 
   return (
-    <div className="border rounded-md">
+    <div className="border rounded-md prose max-w-none">
       <div className="flex flex-wrap items-center gap-1 p-2 border-b">
         <Toggle
           size="sm"
@@ -147,9 +199,15 @@ export default function RichTextEditor({ value, onChange }) {
         >
           <ListOrdered className="h-4 w-4" />
         </Toggle>
-        <Button variant="ghost" size="icon" onClick={() => setShowLinkInput(!showLinkInput)} className="h-8 w-8">
-          <LinkIcon className="h-4 w-4" />
-        </Button>
+        <Toggle
+          size="sm"
+          pressed={isLinkActive}
+          onPressedChange={handleLinkButtonClick}
+          aria-label="Add Link"
+          className={isLinkActive ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' : ''}
+        >
+          <LinkIcon className={`h-4 w-4 ${isLinkActive ? 'text-blue-700' : ''}`} />
+        </Toggle>
         <Button
           variant="ghost"
           size="icon"
@@ -171,36 +229,77 @@ export default function RichTextEditor({ value, onChange }) {
       </div>
 
       {showLinkInput && (
-        <div className="flex items-center gap-2 p-2 border-b">
-          <Input
-            type="url"
-            placeholder="https://example.com"
-            value={linkUrl}
-            onChange={(e) => setLinkUrl(e.target.value)}
-            className="h-8"
-          />
-          <Button size="sm" onClick={addLink}>
-            Add Link
-          </Button>
+        <div className="relative p-3 border-b bg-gray-50">
+          <div className="flex items-start gap-2">
+            <div className="flex-1 space-y-1">
+              <Input
+                type="text"
+                placeholder="https://example.com or /page"
+                value={linkUrl}
+                onChange={(e) => {
+                  setLinkUrl(e.target.value)
+                  if (linkError) setLinkError('')
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addLink()
+                  } else if (e.key === 'Escape') {
+                    e.preventDefault()
+                    setShowLinkInput(false)
+                    setLinkUrl('')
+                    setLinkError('')
+                  }
+                }}
+                className={`h-9 ${linkError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                autoFocus
+              />
+              {linkError && (
+                <p className="text-xs text-red-500 mt-1">{linkError}</p>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">
+                Supports: https://, /page, #section, mailto:, tel:
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button 
+                size="sm" 
+                onClick={addLink}
+                className="h-9 px-4 whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Apply Link
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => {
+                  setShowLinkInput(false)
+                  setLinkUrl('')
+                  setLinkError('')
+                }}
+                className="h-9 px-4 text-xs text-muted-foreground hover:text-foreground"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 
       <div
-  className="relative p-4 min-h-[200px] cursor-text"
-  onClick={() => editor?.chain().focus().run()}
->
-  <EditorContent
-    editor={editor}
-    className="prose prose-sm md:prose-base max-w-none max-h-none"
-  />
-  {/* Fallback filler when editor is empty to make space focusable */}
-  {editor && editor.isEmpty && (
-    <p className="pointer-events-none absolute top-4 left-4 text-muted-foreground">
-      Start typing...
-    </p>
-  )}
-</div>
-
+        className="relative p-4 min-h-[200px] cursor-text"
+        onClick={() => editor?.chain().focus().run()}
+      >
+        <EditorContent
+          editor={editor}
+          className="prose prose-sm md:prose-base max-w-none max-h-none focus:outline-none"
+        />
+        {editor && editor.isEmpty && (
+          <p className="pointer-events-none absolute top-4 left-4 text-muted-foreground">
+            Start typing...
+          </p>
+        )}
+      </div>
     </div>
   )
 }
