@@ -10,7 +10,7 @@ export async function middleware(req) {
   const isProtectedRoute =
     nextUrl.pathname.startsWith("/dashboard") ||
     nextUrl.pathname.startsWith("/categories") ||
-    nextUrl.pathname.startsWith("/products");NEXTAUTH_SECRET
+    nextUrl.pathname.startsWith("/products");
 
   if (isLoginPage && isLoggedIn) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
