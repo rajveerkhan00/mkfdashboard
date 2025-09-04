@@ -10,7 +10,6 @@ export const {
   signIn,
   signOut,
 } = NextAuth({
-  secret: process.env.NEXTAUTH_SECRET,
 
 
   session: { strategy: "jwt" },
@@ -22,13 +21,23 @@ export const {
         password: { label: "Password", type: "password" },
       },
       authorize: async (credentials) => {
+        console.log("Authorize function called");
         await dbConnect();
+        console.log("Database connected");
 
         const user = await User.findOne({ email: credentials.email.toLowerCase() });
-        if (!user) return null;
+        if (!user) {
+          console.log("User not found");
+          return null;
+        }
+        console.log("User found:", user);
 
         const isValid = await bcrypt.compare(credentials.password, user.passwordHash);
-        if (!isValid) return null;
+        if (!isValid) {
+          console.log("Invalid password");
+          return null;
+        }
+        console.log("Password is valid");
 
         return {
           id: user._id.toString(),
