@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 export async function middleware(req) {
-  const token = await getToken({ req, secret: process.env.AUTH_SECRET });
+  const token = await getToken({ req, cookieName: "__Secure-next-auth.session-token", secret: process.env.AUTH_SECRET });
+  console.log("Token", token)
   const { nextUrl } = req;
 
   const isLoggedIn = !!token;
