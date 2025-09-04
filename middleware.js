@@ -1,46 +1,30 @@
-import { auth } from "./auth"
+import { NextResponse } from "next/server";
 
-export default auth((req) => {
-  const { nextUrl } = req;
-  const isLoggedIn = !!req.auth;
+export function middleware(req) {
+  const { nextUrl, cookies } = req;
 
-  const isLoginPage = nextUrl.pathname.startsWith('/login');
-  const isApiAuthRoute = nextUrl.pathname.startsWith('/api/auth');
-  const isProtectedRoute = nextUrl.pathname.startsWith('/dashboard') ||
-                         nextUrl.pathname.startsWith('/categories') ||
-                         nextUrl.pathname.startsWith('/products');
+  const isLoggedIn = cookies.get("next-auth.session-token") || cookies.get("__Secure-next-auth.session-token");
+  const isLoginPage = nextUrl.pathname.startsWith("/login");
+  const isProtectedRoute =
+    nextUrl.pathname.startsWith("/dashboard") ||
+    nextUrl.pathname.startsWith("/categories") ||
+    nextUrl.pathname.startsWith("/products");
 
-  if (isApiAuthRoute) {
-    return null;
+  if (isLoginPage && isLoggedIn) {
+    return NextResponse.redirect(new URL("/dashboard", nextUrl));
   }
 
-  // Redirect to /dashboard if a logged-in user tries to access the login page
-  if (isLoginPage) {
-    if (isLoggedIn) {
-      return Response.redirect(new URL('/dashboard', nextUrl));
-    }
-    return null; // Allow unauthenticated users to see the login page
-  }
-
-  // Redirect to /login if a non-logged-in user tries to access a protected route
   if (!isLoggedIn && isProtectedRoute) {
-    return Response.redirect(new URL('/login', nextUrl));
-  }
-  
-  // Handle the root path
-  if (nextUrl.pathname === '/') {
-      if (isLoggedIn) {
-          return Response.redirect(new URL('/dashboard', nextUrl));
-      } else {
-          return Response.redirect(new URL('/login', nextUrl));
-      }
+    return NextResponse.redirect(new URL("/login", nextUrl));
   }
 
-  // Allow the request to proceed
-  return null;
-})
+  if (nextUrl.pathname === "/") {
+    return NextResponse.redirect(new URL(isLoggedIn ? "/dashboard" : "/login", nextUrl));
+  }
 
-// Use the matcher to specify which routes the middleware should run on.
+  return NextResponse.next();
+}
+
 export const config = {
-    matcher: ['/((?!api|_next/static|_next/image|.*\\..*).*)'],
+  matcher: ["/((?!api|_next/static|_next/image|.*\\..*).*)"],
 };
