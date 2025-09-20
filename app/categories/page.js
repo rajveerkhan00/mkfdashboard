@@ -4,8 +4,14 @@ import { Button } from "@/components/ui/button"
 
 import { PlusCircle } from "lucide-react"
 
-export default function CategoriesPage() {
-  const  fetchUrl = `https://custompackboxes.vercel.app/api/category`
+export default async function CategoriesPage() {
+  const fetchUrl = `https://custompackboxes.vercel.app/api/category`
+  const res = await fetch(fetchUrl, {
+    cache: "no-store",
+    next: { revalidate: 0 },
+  });
+  const categories = await res.json();
+
   return (
     <DashboardShell>
       <div className="flex items-center justify-between">
@@ -24,7 +30,7 @@ export default function CategoriesPage() {
 
       </div>
       <div className="grid gap-4">
-        <CustomList fetchUrl={fetchUrl}/>
+        <CustomList items={categories} isCategory={true} />
       </div>
     </DashboardShell>
   )
