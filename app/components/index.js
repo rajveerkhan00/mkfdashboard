@@ -13,3 +13,4 @@ export {DeleteCategoryButton, DeleteProductButton}
 
 import { handleDelete, handleUpload } from "./HandleUpload"
 export { handleDelete, handleUpload}
+export * from "./CategoryFilter"

@@ -7,21 +7,17 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { DeleteCategoryButton, DeleteProductButton } from "."
-export default async function Customlist({ fetchUrl, isCategory = true }) {
-  const res = await fetch(fetchUrl, {
-    cache: "no-store",
-    next: { revalidate: 0 },
-    headers: {
-      "Content-Type": "application/json",
-    },
-  })
 
-  const categories = await res.json()
-
-  // const deleteCategory = (id) => {
-  //   setCategories(categories.filter((category) => category.id !== id))
-  //   toast("The category has been deleted successfully.")
-  // }
+export default function Customlist({ items, isCategory = true }) {
+  if (!items || items.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center">
+          <p>{isCategory ? "No categories found." : "No products found for this category."}</p>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card>
@@ -37,25 +33,25 @@ export default async function Customlist({ fetchUrl, isCategory = true }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {categories.map((category) => (
-              <TableRow key={category._id}>
+            {items.map((item) => (
+              <TableRow key={item._id}>
                 <TableCell>
                   <Image
                     src={
-                      category.homeImage?.url || // category main image
-                      category.image?.url ||     // product image
-                      category.homeImage ||      // fallback if it's already a string
-                      category.image             // fallback if it's already a string
+                      item.homeImage?.url || // category main image
+                      item.image?.url ||     // product image
+                      item.homeImage ||      // fallback if it's already a string
+                      item.image             // fallback if it's already a string
                     }
-                    alt={category.name}
+                    alt={item.name}
                     width={40}
                     height={40}
                     className="rounded-md object-cover"
                   />
                 </TableCell>
-                <TableCell className="font-medium">{category.name}</TableCell>
-                <TableCell>{category.slug}</TableCell>
-                <TableCell>{!isCategory ? category.categorySlug : category.heading}</TableCell>
+                <TableCell className="font-medium">{item.name}</TableCell>
+                <TableCell>{item.slug}</TableCell>
+                <TableCell>{!isCategory ? item.categorySlug : item.heading}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -66,15 +62,15 @@ export default async function Customlist({ fetchUrl, isCategory = true }) {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem asChild>
-                        <Link href={`${isCategory ? 'categories' : 'products'}/edit/${category._id}`}>
+                        <Link href={`${isCategory ? 'categories' : 'products'}/edit/${item._id}`}>
                           <Pencil className="mr-2 h-4 w-4" />
                           Edit
                         </Link>
                       </DropdownMenuItem>
                       {isCategory ? (
-                        <DeleteCategoryButton id={category._id} publicId={category.homeImage || category.image} />
+                        <DeleteCategoryButton id={item._id} publicId={item.homeImage || item.image} />
                       ) : (
-                        <DeleteProductButton id={category._id} publicId={category.image?.public_id} />
+                        <DeleteProductButton id={item._id} publicId={item.image?.public_id} />
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -87,3 +83,4 @@ export default async function Customlist({ fetchUrl, isCategory = true }) {
     </Card>
   )
 }
+
