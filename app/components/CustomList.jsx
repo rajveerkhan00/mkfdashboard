@@ -32,7 +32,7 @@ export default async function Customlist({ fetchUrl, isCategory = true }) {
               <TableHead className="w-[80px]">Image</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Slug</TableHead>
-              <TableHead>Heading</TableHead>
+              <TableHead>{isCategory ? "Heading" : "Category Type"}</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -55,7 +55,7 @@ export default async function Customlist({ fetchUrl, isCategory = true }) {
                 </TableCell>
                 <TableCell className="font-medium">{category.name}</TableCell>
                 <TableCell>{category.slug}</TableCell>
-                <TableCell>{category.heading}</TableCell>
+                <TableCell>{!isCategory ? category.categorySlug : category.heading}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
