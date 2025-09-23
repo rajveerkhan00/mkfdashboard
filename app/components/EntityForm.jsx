@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { RichTextEditor } from ".";
-import ImageUpload from "./ImageUpload"; // Using the new ImageUpload component
+import ImageUpload from "./ImageUpload";
 import { handleDelete, handleUpload } from ".";
 import {
   Select,
@@ -35,16 +35,12 @@ export default function EntityForm({
 }) {
   const router = useRouter();
 
-  // State for image objects (url and public_id)
   const [image, setImage] = useState(
-    entityType === "category" ? initialData?.homeImage || null : initialData?.image || null
+    entityType === "category"
+      ? initialData?.homeImage || null
+      : initialData?.image || null
   );
-
   const [heroImage, setHeroImage] = useState(initialData?.heroImage || null);
-
-  // State for new image files
-  const [imageFile, setImageFile] = useState(null);
-  const [heroImageFile, setHeroImageFile] = useState(null);
 
   const [longDescription, setLongDescription] = useState(
     initialData?.longDescription || ""
@@ -75,9 +71,12 @@ export default function EntityForm({
     if (entityType === "products") {
       const fetchCategories = async () => {
         try {
-          const res = await fetch("https://custompackboxes.vercel.app/api/category", {
-            next: { revalidate: 0 },
-          });
+          const res = await fetch(
+            "https://custompackboxes.vercel.app/api/category",
+            {
+              next: { revalidate: 0 },
+            }
+          );
           if (res.ok) {
             const data = await res.json();
             setCategories(data);
@@ -92,45 +91,61 @@ export default function EntityForm({
     }
   }, [entityType]);
 
+  const processImage = async (
+    imageObject,
+    initialImageObject
+  ) => {
+    if (!imageObject) {
+      // Image was removed
+      if (initialImageObject?.public_id) {
+        await handleDelete(initialImageObject.public_id);
+      }
+      return null;
+    }
+
+    if (imageObject.file) {
+      // New file to upload
+      if (initialImageObject?.public_id) {
+        await handleDelete(initialImageObject.public_id);
+      }
+      const uploadResult = await handleUpload(imageObject.file);
+      return {
+        ...imageObject,
+        url: uploadResult.url,
+        public_id: uploadResult.public_id,
+        file: undefined, // No need to store the file object in DB
+      };
+    }
+
+    // No changes to the file, just return the metadata
+    return imageObject;
+  };
+
   const onSubmit = async (data) => {
     setIsLoading(true);
     try {
-      let newImageData = image;
+      const newImageData = await processImage(
+        image,
+        entityType === "category"
+          ? initialData?.homeImage
+          : initialData?.image
+      );
       let newHeroImageData = heroImage;
-
-      if (imageFile) {
-        // If there was an old image, delete it
-        if (initialData?.image?.public_id) {
-          await handleDelete(initialData.image.public_id);
-        }
-        newImageData = await handleUpload(imageFile); // ✅ changed
-      } else if (image === null && initialData?.image?.public_id) {
-        // Handle case where image was removed without replacement
-        await handleDelete(initialData.image.public_id); // ✅ changed
-        newImageData = null;
+      if (entityType === "category") {
+        newHeroImageData = await processImage(
+          heroImage,
+          initialData?.heroImage
+        );
       }
-
-      // Handle hero image upload for categories
-      if (heroImageFile) {
-        if (initialData?.heroImage?.public_id) {
-          await handleDelete(initialData.heroImage.public_id);
-        }
-        newHeroImageData = await handleUpload(heroImageFile); // ✅ changed
-      } else if (heroImage === null && initialData?.heroImage?.public_id) {
-        await handleDelete(initialData.heroImage.public_id); // ✅ changed
-        newHeroImageData = null;
-      }
-
 
       const formData = {
         ...data,
         longDescription,
         ...(entityType === "category"
-          ? { homeImage: newImageData, heroImage: newHeroImageData } // ✅ FIX
-          : { image: newImageData }), // ✅ Products stay same
+          ? { homeImage: newImageData, heroImage: newHeroImageData }
+          : { image: newImageData }),
         ...(entityType === "products" && { categorySlug }),
       };
-
 
       const res = await fetch(
         initialData?._id
@@ -152,12 +167,13 @@ export default function EntityForm({
       }
 
       toast.success(
-        `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} ${initialData?._id ? "Updated" : "Created"
-        } Successfully`
+        `${
+          entityType.charAt(0).toUpperCase() + entityType.slice(1)
+        } ${initialData?._id ? "Updated" : "Created"} Successfully`
       );
 
       router.push(`/${rePush}`);
-      router.refresh(); // To reflect changes immediately
+      router.refresh();
     } catch (err) {
       console.error(err);
       toast.error(err.message || "Something went wrong.");
@@ -173,15 +189,16 @@ export default function EntityForm({
           {initialData?._id ? `Edit` : `New`} {entityType}
         </CardTitle>
         <CardDescription>
-          Fill in the details to {initialData?._id ? "update your" : "create a new"}{" "}
-          {entityType}.
+          Fill in the details to{" "}
+          {initialData?._id ? "update your" : "create a new"} {entityType}.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Form fields remain the same */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="name">{entityType.charAt(0).toUpperCase() + entityType.slice(1)} Name</Label>
+            <Label htmlFor="name">
+              {entityType.charAt(0).toUpperCase() + entityType.slice(1)} Name
+            </Label>
             <Input
               id="name"
               placeholder={`${entityType} name`}
@@ -192,7 +209,9 @@ export default function EntityForm({
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="slug">{entityType.charAt(0).toUpperCase() + entityType.slice(1)} Slug</Label>
+            <Label htmlFor="slug">
+              {entityType.charAt(0).toUpperCase() + entityType.slice(1)} Slug
+            </Label>
             <Input
               id="slug"
               placeholder={`${entityType}-slug`}
@@ -226,7 +245,9 @@ export default function EntityForm({
             })}
           />
           {errors.shortDescription && (
-            <p className="text-sm text-red-500">{errors.shortDescription.message}</p>
+            <p className="text-sm text-red-500">
+              {errors.shortDescription.message}
+            </p>
           )}
         </div>
 
@@ -269,7 +290,9 @@ export default function EntityForm({
               </SelectContent>
             </Select>
             {errors.categorySlug && (
-              <p className="text-sm text-red-500">{errors.categorySlug.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.categorySlug.message}
+              </p>
             )}
           </div>
         )}
@@ -279,17 +302,13 @@ export default function EntityForm({
               {entityType === "category" ? "Main Image" : "Product Image"}
             </Label>
             <ImageUpload
-              initialImageUrl={
+              initialImage={
                 entityType === "category"
-                  ? initialData?.homeImage?.url || image?.url || image
-                  : initialData?.image?.url || image?.url || image
+                  ? initialData?.homeImage
+                  : initialData?.image
               }
-              onFileChange={(file) => {
-                setImageFile(file);
-                if (!file) setImage(null);
-              }}
+              onImageChange={setImage}
             />
-
             <p className="text-xs text-muted-foreground">
               Recommended size: 800x600px
             </p>
@@ -299,11 +318,8 @@ export default function EntityForm({
             <div className="space-y-2">
               <Label>Hero Image</Label>
               <ImageUpload
-                initialImageUrl={heroImage?.url || heroImage}
-                onFileChange={(file) => {
-                  setHeroImageFile(file);
-                  if (!file) setHeroImage(null);
-                }}
+                initialImage={initialData?.heroImage}
+                onImageChange={setHeroImage}
               />
               <p className="text-xs text-muted-foreground">
                 Recommended size: 1920x1080px
