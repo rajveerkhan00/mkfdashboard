@@ -8,11 +8,11 @@ export default async function ProductPage({ searchParams }) {
 
   // 1. Fetch all categories and all products
   const [categoriesRes, allProductsRes] = await Promise.all([
-    fetch(`https://custompackboxes.vercel.app/api/category`, {
+    fetch(`https://custompackboxes.com/api/category`, {
       cache: "no-store",
       next: { revalidate: 0 },
     }),
-    fetch(`https://custompackboxes.vercel.app/api/products`, { // Always fetch all products
+    fetch(`https://custompackboxes.com/api/products`, { // Always fetch all products
       cache: "no-store",
       next: { revalidate: 0 },
     }),

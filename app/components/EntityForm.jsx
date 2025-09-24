@@ -72,7 +72,7 @@ export default function EntityForm({
       const fetchCategories = async () => {
         try {
           const res = await fetch(
-            "https://custompackboxes.vercel.app/api/category",
+            "https://custompackboxes.com/api/category",
             {
               next: { revalidate: 0 },
             }
@@ -149,8 +149,8 @@ export default function EntityForm({
 
       const res = await fetch(
         initialData?._id
-          ? `https://custompackboxes.vercel.app/api/${entityType}/${initialData._id}`
-          : `https://custompackboxes.vercel.app/api/${entityType}`,
+          ? `https://custompackboxes.com/api/${entityType}/${initialData._id}`
+          : `https://custompackboxes.com/api/${entityType}`,
         {
           method: initialData?._id ? "PUT" : "POST",
           next: { revalidate: 0 },

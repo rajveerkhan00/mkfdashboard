@@ -3,7 +3,7 @@ import { EntityForm, DashboardShell } from "@/app/components"
 export default async function UpdateCategoryPage({params}) {
 
   const {id} = params
-  const res = await fetch(`https://custompackboxes.vercel.app/api/products/${id}`, {
+  const res = await fetch(`https://custompackboxes.com/api/products/${id}`, {
     cache: "no-store",
   })
 
