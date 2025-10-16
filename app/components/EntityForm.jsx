@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -41,6 +40,13 @@ export default function EntityForm({
       : initialData?.image || null
   );
   const [heroImage, setHeroImage] = useState(initialData?.heroImage || null);
+  
+  // Initialize additional images with proper structure
+  const [additionalImages, setAdditionalImages] = useState([
+    { url: "", alt: "", title: "", caption: "", description: "", public_id: "" },
+    { url: "", alt: "", title: "", caption: "", description: "", public_id: "" },
+    { url: "", alt: "", title: "", caption: "", description: "", public_id: "" }
+  ]);
 
   const [longDescription, setLongDescription] = useState(
     initialData?.longDescription || ""
@@ -66,6 +72,22 @@ export default function EntityForm({
       categorySlug: initialData?.categorySlug || "",
     },
   });
+
+  // Initialize additional images when initialData changes
+  useEffect(() => {
+    if (entityType === "products" && initialData?.images) {
+      // Ensure we always have exactly 3 additional images
+      const initialImages = [...initialData.images];
+      
+      // Fill empty slots if there are less than 3 images
+      while (initialImages.length < 3) {
+        initialImages.push({ url: "", alt: "", title: "", caption: "", description: "", public_id: "" });
+      }
+      
+      // Take only first 3 images
+      setAdditionalImages(initialImages.slice(0, 3));
+    }
+  }, [initialData, entityType]);
 
   useEffect(() => {
     if (entityType === "products") {
@@ -110,15 +132,78 @@ export default function EntityForm({
       }
       const uploadResult = await handleUpload(imageObject.file);
       return {
-        ...imageObject,
         url: uploadResult.url,
         public_id: uploadResult.public_id,
-        file: undefined, // No need to store the file object in DB
+        alt: imageObject.alt || "",
+        title: imageObject.title || "",
+        caption: imageObject.caption || "",
+        description: imageObject.description || "",
       };
     }
 
     // No changes to the file, just return the metadata
     return imageObject;
+  };
+
+  // Function to handle additional image changes
+  const handleAdditionalImageChange = (index, field, value) => {
+    const updatedImages = [...additionalImages];
+    
+    if (field === 'image') {
+      // When the entire image object changes (from ImageUpload)
+      if (value === null) {
+        // Image was removed
+        updatedImages[index] = { url: "", alt: "", title: "", caption: "", description: "", public_id: "" };
+      } else {
+        updatedImages[index] = {
+          ...updatedImages[index],
+          ...value
+        };
+      }
+    } else {
+      // When individual fields change
+      updatedImages[index] = {
+        ...updatedImages[index],
+        [field]: value
+      };
+    }
+    
+    setAdditionalImages(updatedImages);
+  };
+
+  // Process all additional images
+  const processAdditionalImages = async () => {
+    const processedImages = [];
+    
+    for (let i = 0; i < additionalImages.length; i++) {
+      const currentImage = additionalImages[i];
+      const initialImageData = initialData?.images?.[i] || null;
+      
+      // If image has no URL and no file, it's empty - skip it
+      if (!currentImage.url && !currentImage.file) {
+        // If there was an initial image, delete it
+        if (initialImageData?.public_id) {
+          await handleDelete(initialImageData.public_id);
+        }
+        continue;
+      }
+
+      // If there's a file to upload or image to process
+      if (currentImage.file || currentImage.url) {
+        const processedImage = await processImage(
+          currentImage,
+          initialImageData
+        );
+        if (processedImage) {
+          processedImages.push(processedImage);
+        }
+      } else {
+        // No changes to the image, just keep the existing data
+        processedImages.push(currentImage);
+      }
+    }
+    
+    return processedImages;
   };
 
   const onSubmit = async (data) => {
@@ -138,13 +223,26 @@ export default function EntityForm({
         );
       }
 
+      // Process additional images for products
+      let processedAdditionalImages = [];
+      if (entityType === "products") {
+        processedAdditionalImages = await processAdditionalImages();
+      }
+
       const formData = {
         ...data,
         longDescription,
         ...(entityType === "category"
           ? { homeImage: newImageData, heroImage: newHeroImageData }
-          : { image: newImageData }),
-        ...(entityType === "products" && { categorySlug }),
+          : { 
+              image: newImageData,
+              ...(entityType === "products" && { 
+                images: processedAdditionalImages 
+              })
+            }),
+        ...(entityType === "products" && { 
+          categorySlug,
+        }),
       };
 
       const res = await fetch(
@@ -296,37 +394,141 @@ export default function EntityForm({
             )}
           </div>
         )}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label>
-              {entityType === "category" ? "Main Image" : "Product Image"}
-            </Label>
-            <ImageUpload
-              initialImage={
-                entityType === "category"
-                  ? initialData?.homeImage
-                  : initialData?.image
-              }
-              onImageChange={setImage}
-            />
-            <p className="text-xs text-muted-foreground">
-              Recommended size: 800x600px
-            </p>
-          </div>
+        
+        {/* Main Product Image + 3 Additional Images */}
+        {entityType === "products" && (
+          <div className="space-y-6">
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-medium mb-4">Product Images</h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                Upload up to 4 images for your product. The first image will be used as the main product image.
+              </p>
+              
+              {/* Main Product Image */}
+              <div className="space-y-4 mb-8">
+                <h4 className="font-medium text-base">Main Product Image</h4>
+                <div className="space-y-2">
+                  <ImageUpload
+                    initialImage={
+                      initialData?.image || null
+                    }
+                    onImageChange={setImage}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This will be the primary image displayed for your product. Recommended size: 800x600px
+                  </p>
+                </div>
+              </div>
 
-          {entityType === "category" && (
+              {/* Additional Product Images */}
+              <div className="space-y-6">
+                <h4 className="font-medium text-base">Additional Product Images</h4>
+                <div className="grid grid-cols-1 gap-6">
+                  {additionalImages.map((additionalImage, index) => (
+                    <div key={index} className="border rounded-lg p-4 space-y-4 bg-muted/5">
+                      <h5 className="font-medium">Additional Image {index + 1}</h5>
+                      
+                      <div className="space-y-2">
+                        <Label>Image</Label>
+                        <ImageUpload
+                          initialImage={additionalImage}
+                          onImageChange={(image) => 
+                            handleAdditionalImageChange(index, 'image', image)
+                          }
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Recommended size: 800x600px
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label>Alt Text</Label>
+                          <Input
+                            placeholder="Enter alt text for accessibility"
+                            value={additionalImage.alt || ""}
+                            onChange={(e) => 
+                              handleAdditionalImageChange(index, 'alt', e.target.value)
+                            }
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Caption</Label>
+                          <Input
+                            placeholder="Enter image caption"
+                            value={additionalImage.caption || ""}
+                            onChange={(e) => 
+                              handleAdditionalImageChange(index, 'caption', e.target.value)
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Title</Label>
+                        <Input
+                          placeholder="Enter image title"
+                          value={additionalImage.title || ""}
+                          onChange={(e) => 
+                            handleAdditionalImageChange(index, 'title', e.target.value)
+                          }
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Description</Label>
+                        <Textarea
+                          placeholder="Enter detailed description"
+                          value={additionalImage.description || ""}
+                          onChange={(e) => 
+                            handleAdditionalImageChange(index, 'description', e.target.value)
+                          }
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Category Images (only show if not products) */}
+        {entityType !== "products" && (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="space-y-2">
-              <Label>Hero Image</Label>
+              <Label>
+                {entityType === "category" ? "Main Image" : "Product Image"}
+              </Label>
               <ImageUpload
-                initialImage={initialData?.heroImage}
-                onImageChange={setHeroImage}
+                initialImage={
+                  entityType === "category"
+                    ? initialData?.homeImage
+                    : initialData?.image
+                }
+                onImageChange={setImage}
               />
               <p className="text-xs text-muted-foreground">
-                Recommended size: 1920x1080px
+                Recommended size: 800x600px
               </p>
             </div>
-          )}
-        </div>
+
+            {entityType === "category" && (
+              <div className="space-y-2">
+                <Label>Hero Image</Label>
+                <ImageUpload
+                  initialImage={initialData?.heroImage}
+                  onImageChange={setHeroImage}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Recommended size: 1920x1080px
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
       <CardFooter className="flex justify-between">
         <Button
