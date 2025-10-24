@@ -11,6 +11,7 @@ import {
   NotepadText,
   UserPlus,
   LogOut,
+  ArrowRightLeft,
 } from "lucide-react";
 import {
   Sidebar,
@@ -57,6 +58,11 @@ const data = {
           icon: NotepadText,
           url: "/blogs",
           isActive: false, // Corrected from true to false for default state
+        },
+        {
+          title: "Redirections",
+          icon: ArrowRightLeft,
+          url: "/redirections",
         },
       ],
     },
