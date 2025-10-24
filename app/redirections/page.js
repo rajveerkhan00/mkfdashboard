@@ -27,7 +27,7 @@ const RedirectionsPage = async () => {
           </div>
           <Link 
             href="/redirections/add" 
-            className="bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
+            className="bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-600 flex items-center gap-2"
           >
             <PlusCircle className="h-4 w-4" />
             Add Redirection
