@@ -1,3 +1,4 @@
+// app/redirections/page.js
 import React from 'react'
 import Link from 'next/link'
 import { PlusCircle } from 'lucide-react'
@@ -5,10 +6,19 @@ import RedirectionList from '@/components/redirections/redirection-list'
 import { getRedirections } from '@/lib/redirections'
 
 const RedirectionsPage = async () => {
-  const redirections = await getRedirections()
+  let redirections = []
+  
+  try {
+    console.log('🔄 Server: Fetching redirections...')
+    redirections = await getRedirections()
+    console.log(`✅ Server: Found ${redirections?.length || 0} redirections`)
+  } catch (error) {
+    console.error('❌ Server: Error fetching redirections:', error)
+    redirections = []
+  }
 
   return (
-    <div className="ml-20">
+    <div className="ml-20 w-full mr-20">
       <div className="container mx-auto py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -31,3 +41,6 @@ const RedirectionsPage = async () => {
 }
 
 export default RedirectionsPage
+
+// Ensure the page is dynamically rendered
+export const dynamic = 'force-dynamic'
