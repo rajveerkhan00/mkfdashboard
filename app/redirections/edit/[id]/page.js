@@ -14,7 +14,7 @@ const EditRedirectionPage = async (props) => {
         <div className="container mx-auto py-8">
           <div className="text-center">
             <h2 className="text-2xl font-semibold">Redirection Not Found</h2>
-            <p className="text-gray-600 mb-4">The redirection you're looking for doesn't exist.</p>
+            <p className="text-gray-600 mb-4">The redirection you&apos;re looking for doesn&apos;t exist.</p>
             <Link href="/redirections" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 inline-block">
               Back to Redirections
             </Link>
