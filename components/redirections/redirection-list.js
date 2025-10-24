@@ -147,7 +147,7 @@ const RedirectionList = ({ initialRedirections }) => {
                   
                   <Link 
                     href="/redirections/add" 
-                    className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-4 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl"
+                    className="inline-flex items-center gap-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white px-8 py-4 rounded-xl hover:from-gray-700 hover:to-gray-800 transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl"
                   >
                     <Plus className="h-5 w-5" />
                     Create Your First Redirection
