@@ -107,7 +107,7 @@ const RedirectionList = ({ initialRedirections }) => {
       <button 
         onClick={refreshData}
         disabled={refreshing}
-        className="mt-1 bg-blue-500 px-2 py-1 rounded text-xs disabled:opacity-50"
+        className="mt-1 bg-gray-400 px-2 py-1 rounded text-xs disabled:opacity-50"
       >
         {refreshing ? 'Refreshing...' : 'Refresh'}
       </button>

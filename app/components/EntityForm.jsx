@@ -206,6 +206,27 @@ export default function EntityForm({
     return processedImages;
   };
 
+  // Function to handle image download
+  const handleDownloadImage = (imageUrl, imageName = "image") => {
+    if (!imageUrl) {
+      toast.error("No image available to download");
+      return;
+    }
+
+    try {
+      const link = document.createElement('a');
+      link.href = imageUrl;
+      link.download = `${imageName}-${Date.now()}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("Image download started");
+    } catch (error) {
+      console.error("Download error:", error);
+      toast.error("Failed to download image");
+    }
+  };
+
   const onSubmit = async (data) => {
     setIsLoading(true);
     try {
@@ -414,6 +435,19 @@ export default function EntityForm({
                     }
                     onImageChange={setImage}
                   />
+                  {image?.url && (
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="bg-blue-500 text-white hover:bg-blue-200 "
+                        size="sm"
+                        onClick={() => handleDownloadImage(image.url, "main-product-image")}
+                      >
+                        Download Image
+                      </Button>
+                    </div>
+                  )}
                   <p className="text-xs text-muted-foreground">
                     This will be the primary image displayed for your product. Recommended size: 800x600px
                   </p>
@@ -436,6 +470,18 @@ export default function EntityForm({
                             handleAdditionalImageChange(index, 'image', image)
                           }
                         />
+                        {additionalImage?.url && (
+                          <div className="flex justify-end">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDownloadImage(additionalImage.url, `additional-image-${index + 1}`)}
+                            >
+                              Download Image
+                            </Button>
+                          </div>
+                        )}
                         <p className="text-xs text-muted-foreground">
                           Recommended size: 800x600px
                         </p>
@@ -510,6 +556,21 @@ export default function EntityForm({
                 }
                 onImageChange={setImage}
               />
+              {image?.url && (
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDownloadImage(
+                      image.url, 
+                      entityType === "category" ? "main-category-image" : "product-image"
+                    )}
+                  >
+                    Download Image
+                  </Button>
+                </div>
+              )}
               <p className="text-xs text-muted-foreground">
                 Recommended size: 800x600px
               </p>
@@ -522,6 +583,18 @@ export default function EntityForm({
                   initialImage={initialData?.heroImage}
                   onImageChange={setHeroImage}
                 />
+                {heroImage?.url && (
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownloadImage(heroImage.url, "hero-image")}
+                    >
+                      Download Image
+                    </Button>
+                  </div>
+                )}
                 <p className="text-xs text-muted-foreground">
                   Recommended size: 1920x1080px
                 </p>
