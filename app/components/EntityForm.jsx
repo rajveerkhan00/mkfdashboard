@@ -475,6 +475,7 @@ export default function EntityForm({
                             <Button
                               type="button"
                               variant="outline"
+                              className="bg-blue-500 text-white hover:bg-blue-200 "
                               size="sm"
                               onClick={() => handleDownloadImage(additionalImage.url, `additional-image-${index + 1}`)}
                             >
@@ -562,6 +563,7 @@ export default function EntityForm({
                     type="button"
                     variant="outline"
                     size="sm"
+                    className="bg-blue-500 text-white hover:bg-blue-200 "
                     onClick={() => handleDownloadImage(
                       image.url, 
                       entityType === "category" ? "main-category-image" : "product-image"
@@ -588,6 +590,7 @@ export default function EntityForm({
                     <Button
                       type="button"
                       variant="outline"
+                      className="bg-blue-500 text-white hover:bg-blue-200 "
                       size="sm"
                       onClick={() => handleDownloadImage(heroImage.url, "hero-image")}
                     >
